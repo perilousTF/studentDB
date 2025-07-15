@@ -9,7 +9,6 @@ A comprehensive C++ file-based database system for managing student records with
 - [Installation](#installation)
 - [Usage](#usage)
 - [Database Architecture](#database-architecture)
-- [API Reference](#api-reference)
 - [Contributing](#contributing)
 - [License](#license)
 
