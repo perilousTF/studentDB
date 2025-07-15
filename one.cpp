@@ -11,12 +11,10 @@
 
 using namespace std;
 
-// --- Global Constants ---
 const int NAME_SIZE = 50;
 const int ADDR_SIZE = 100;
-const int PAGE_SIZE = 5; // Number of records to display per page
+const int PAGE_SIZE = 5; // No of records per page
 
-// --- Data Structures ---
 struct Student {
     int id;
     char name[NAME_SIZE];
@@ -26,10 +24,11 @@ struct Student {
     bool isActive;
 
     Student() : id(0), createdAt(0), updatedAt(0), isActive(false) {
-        name[0] = '\0'; address[0] = '\0';
+        name[0] = '\0'; 
+        address[0] = '\0';
     }
-    Student(int studentId, const string& studentName, const string& studentAddress)
-        : id(studentId), isActive(true) {
+
+    Student(int studentId, const string& studentName, const string& studentAddress) : id(studentId), isActive(true) {
         createdAt = time(nullptr); updatedAt = time(nullptr);
         strncpy(name, studentName.c_str(), NAME_SIZE - 1);
         name[NAME_SIZE - 1] = '\0';
@@ -40,11 +39,9 @@ struct Student {
     void print() const {
         if (!isActive) return;
         
-        // Fixed: Use standard ctime instead of ctime_s
         char* createdStr = ctime(&createdAt);
         char* updatedStr = ctime(&updatedAt);
         
-        // Remove newline characters
         if (createdStr) {
             createdStr[strcspn(createdStr, "\n")] = 0;
         }
@@ -58,7 +55,7 @@ struct Student {
         cout << "Address:    " << address << endl;
         cout << "Created At: " << (createdStr ? createdStr : "Unknown") << endl;
         cout << "Updated At: " << (updatedStr ? updatedStr : "Unknown") << endl;
-        cout << "------------------------" << endl;
+        cout << "-------------------------" << endl;
     }
 };
 
@@ -69,7 +66,6 @@ struct PageResult {
     int totalRecords;
 };
 
-// --- The Database Engine (Normal, In-line Structure) ---
 class IndexedStudentDB {
 private:
     string dataFilename;
@@ -82,14 +78,14 @@ private:
         if (!indexIn) return;
         int id;
         streampos pos;
-        while (indexIn.read(reinterpret_cast<char*>(&id), sizeof(id)) &&
-               indexIn.read(reinterpret_cast<char*>(&pos), sizeof(pos))) {
+        while (indexIn.read(reinterpret_cast<char*>(&id), sizeof(id)) &&  indexIn.read(reinterpret_cast<char*>(&pos), sizeof(pos))) {
             id_index[id] = pos;
         }
     }
 
     void saveIndex() {
         ofstream indexOut(indexFilename, ios::binary | ios::trunc);
+
         for (const auto& pair : id_index) {
             int id = pair.first;
             streampos pos = pair.second;
@@ -103,16 +99,18 @@ public:
         dataFilename = basename + ".dat";
         indexFilename = basename + ".idx";
         dataFile.open(dataFilename, ios::in | ios::out | ios::binary | ios::app);
+
         if (!dataFile.is_open() || dataFile.tellg() == 0) {
             dataFile.close();
             dataFile.open(dataFilename, ios::in | ios::out | ios::binary | ios::trunc);
         }
+
         loadIndex();
     }
 
     ~IndexedStudentDB() {
         if (dataFile.is_open()) {
-            cout << "\nShutting down. Saving index..." << endl;
+            cout << "\n Shutting down. Saving index..." << endl;
             saveIndex();
             dataFile.close();
         }
@@ -122,24 +120,22 @@ public:
         if (id_index.count(s.id)) {
             cerr << "Error: Student with ID " << s.id << " already exists." << endl;
             return false;
-        }
-        
-        // Clear any error flags and go to end of file
+        }        
+
         dataFile.clear();
         dataFile.seekp(0, ios::end);
         streampos newPos = dataFile.tellp();
         dataFile.write(reinterpret_cast<const char*>(&s), sizeof(Student));
-        dataFile.flush(); // Ensure data is written immediately
+        dataFile.flush(); 
         
         id_index[s.id] = newPos;
         return true;
     }
 
     optional<Student> findStudentById(int id) {
-        if (id_index.count(id) == 0) return nullopt;
+        if (id_index.count(id) == 0)    return nullopt;
         streampos pos = id_index.at(id);
         
-        // Clear any error flags and ensure we can read
         dataFile.clear();
         dataFile.seekg(pos);
         
@@ -147,6 +143,7 @@ public:
         if (dataFile.read(reinterpret_cast<char*>(&s), sizeof(Student))) {
             if (s.isActive && s.id == id) return s;
         }
+
         return nullopt;
     }
 
@@ -156,6 +153,7 @@ public:
             cerr << "Error: Cannot update non-existent student with ID " << id << endl;
             return false;
         }
+
         Student s = *studentOpt;
         strncpy(s.name, newName.c_str(), NAME_SIZE - 1);
         s.name[NAME_SIZE - 1] = '\0';
@@ -165,31 +163,32 @@ public:
         
         streampos pos = id_index.at(id);
         
-        // Clear any error flags and ensure we can write
         dataFile.clear();
         dataFile.seekp(pos);
         dataFile.write(reinterpret_cast<const char*>(&s), sizeof(Student));
-        dataFile.flush(); // Ensure data is written immediately
+        dataFile.flush(); 
         
         return true;
     }
 
     bool deleteStudent(int id) {
         if (id_index.count(id) == 0) return false;
+
         auto studentOpt = findStudentById(id);
+
         if (!studentOpt) return false;
+
         Student s = *studentOpt;
         s.isActive = false;
         s.updatedAt = time(nullptr);
         
         streampos pos = id_index.at(id);
         
-        // Clear any error flags and ensure we can write
         dataFile.clear();
         dataFile.seekp(pos);
         dataFile.write(reinterpret_cast<const char*>(&s), sizeof(Student));
-        dataFile.flush(); // Ensure data is written immediately
-        
+        dataFile.flush();
+                
         id_index.erase(id);
         return true;
     }
@@ -204,6 +203,7 @@ public:
         dataFile.clear();
         dataFile.seekg(0, ios::beg);
         Student s;
+
         while (dataFile.read(reinterpret_cast<char*>(&s), sizeof(Student))) {
             if (s.isActive) {
                 if (totalActiveRecords >= recordsToSkip && pageStudents.size() < pageSize) {
@@ -212,6 +212,7 @@ public:
                 totalActiveRecords++;
             }
         }
+        
         result.students = pageStudents;
         result.totalRecords = totalActiveRecords;
         result.totalPages = (totalActiveRecords + pageSize - 1) / pageSize;
@@ -230,11 +231,14 @@ public:
 
         dataFile.clear();
         dataFile.seekg(0, ios::beg);
+
         Student s;
         while (dataFile.read(reinterpret_cast<char*>(&s), sizeof(Student))) {
+
             if (s.isActive) {
                 string fieldToCompare = byName ? s.name : s.address;
                 transform(fieldToCompare.begin(), fieldToCompare.end(), fieldToCompare.begin(), ::tolower);
+
                 if (fieldToCompare.find(lowerQuery) != string::npos) {
                     if (totalMatchingRecords >= recordsToSkip && pageStudents.size() < pageSize) {
                         pageStudents.push_back(s);
@@ -243,6 +247,7 @@ public:
                 }
             }
         }
+
         result.students = pageStudents;
         result.totalRecords = totalMatchingRecords;
         result.totalPages = (totalMatchingRecords + pageSize - 1) / pageSize;
@@ -250,8 +255,6 @@ public:
         return result;
     }
 };
-
-// --- Command-Line Interface (CLI) ---
 
 void printMenu() {
     cout << "\n===== Student Database Menu =====" << endl;
@@ -263,7 +266,7 @@ void printMenu() {
     cout << "6. Search by Name" << endl;
     cout << "7. Search by Address" << endl;
     cout << "0. Exit" << endl;
-    cout << "===============================" << endl;
+    cout << "=====================================" << endl;
     cout << "Enter your choice: ";
 }
 
@@ -329,8 +332,7 @@ void handleDeleteStudent(IndexedStudentDB& db) {
 }
 
 void displayPagedResults(const PageResult& page) {
-    cout << "\n--- Page " << page.currentPage << " of " << page.totalPages
-         << " (Total Matching Records: " << page.totalRecords << ") ---" << endl;
+    cout << "\n--- Page " << page.currentPage << " of " << page.totalPages << " (Total Matching Records: " << page.totalRecords << ") ---" << endl;
     if (page.students.empty()) {
         cout << "No records found on this page." << endl;
     } else {
@@ -352,10 +354,14 @@ void handleListAllStudents(IndexedStudentDB& db) {
     while (true) {
         PageResult page = db.getAllStudents(currentPage, PAGE_SIZE);
         displayPagedResults(page);
-        if (page.totalPages <= 1) { cin.get(); break; } // Wait for enter if only one page
+        if (page.totalPages <= 1) { 
+            cin.get(); 
+            break;
+        } 
         char navChoice;
         cin >> navChoice;
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
         navChoice = tolower(navChoice);
         if (navChoice == 'n' && currentPage < page.totalPages) {
             currentPage++;
@@ -377,11 +383,15 @@ void handleSearch(IndexedStudentDB& db, bool byName) {
     while (true) {
         PageResult page = db.searchBy(query, byName, currentPage, PAGE_SIZE);
         displayPagedResults(page);
-        if (page.totalPages <= 1) { cin.get(); break; } // Wait for enter if only one page
+        if (page.totalPages <= 1) { 
+            cin.get(); 
+            break; 
+        } 
         char navChoice;
         cin >> navChoice;
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         navChoice = tolower(navChoice);
+
         if (navChoice == 'n' && currentPage < page.totalPages) {
             currentPage++;
         } else if (navChoice == 'p' && currentPage > 1) {
@@ -389,14 +399,17 @@ void handleSearch(IndexedStudentDB& db, bool byName) {
         } else if (navChoice == 'q') {
             break;
         } else {
-            cout << "Invalid navigation choice." << endl;
+            cout << "Invalid navigation choice input." << endl;
         }
     }
 }
 
-// --- Main Program Entry Point ---
+
 int main() {
-    IndexedStudentDB db("school_db");
+    string fileName;
+    cout << "Enter File name: ";
+    getline(cin, fileName);
+    IndexedStudentDB db(fileName);
     
     while (true) {
         printMenu();
@@ -409,7 +422,7 @@ int main() {
             case 5: handleListAllStudents(db); break;
             case 6: handleSearch(db, true); break;
             case 7: handleSearch(db, false); break;
-            case 0: return 0; // Destructor will be called here to save the index
+            case 0: return 0; // Destructor call
             default: cout << "Invalid choice. Please try again." << endl;
         }
     }
