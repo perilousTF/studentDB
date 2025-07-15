@@ -148,8 +148,6 @@ struct Student {
 - **Search by Name/Address**: O(n) linear scan
 - **Pagination**: O(n) but memory efficient
 
-## 📚 API Reference
-
 ### IndexedStudentDB Class
 
 #### Constructor
@@ -225,11 +223,10 @@ We welcome contributions! Please follow these steps:
 
 - [ ] Add data export/import (CSV, JSON)
 - [ ] Implement B-tree indexing for better search performance
-- [ ] Add data validation and constraints
 - [ ] Create GUI version using Qt or similar
 - [ ] Add networking support for client-server architecture
-- [ ] Implement transaction support
-- [ ] Add backup and restore functionality
+- [ ] Implement versioning system for record updates
+- [ ] Add Fuzzy Search for search by address and name
 
 ## 📄 License
 
@@ -237,7 +234,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👨‍💻 Author
 
-**Your Name**
+**Pratyay Patra**
 - GitHub: [@perilousTF](https://github.com/perilousTF)
 - Email: pratyaypatra31@gmail.com
 
